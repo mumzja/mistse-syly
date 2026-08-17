@@ -1584,7 +1584,18 @@ const TERRAIN = {
   waste:{label:'Пустир', icon:'ph-wind', reward:{}, clearCost:1, hint:'', color:'#e0a6b0'},
   ruins:{label:'Руїни', icon:'ph-question', reward:{}, clearCost:3, hint:'', color:'#9184d9'}
 };
-const BRANCH_LABELS = {mat:'Припаси', prov:'Харчі', gold:'Скарб', def:'Оборона', exp:'Мандри', pen:'Загін', mine:'Скарб', coast:'Припаси'};
+const BRANCH_LABELS = {mat:'Припаси', prov:'Харчі', gold:'Скарб', def:'Оборона', exp:'Мандри', pen:'Загін', mine:'Скарб', coast:'Припаси', starter:'Похід', seaport:'Похід', unique:'Унікальні'};
+function branchLabelOf(br){
+  if(!br) return null;
+  const list=[].concat(br).map(b=>BRANCH_LABELS[b]).filter(Boolean);
+  return list.length?list[0]:null;
+}
+function branchLabelsAll(br){
+  if(!br) return '—';
+  if(br==='any') return 'будь-яка будівля';
+  const list=[...new Set([].concat(br).map(b=>BRANCH_LABELS[b]||b))];
+  return list.join(' / ');
+}
 const BRANCH_TERRAIN = {mat:'forest', prov:'field', mine:'stone', gold:['forest','field','waste'], pen:['forest','field','waste'], coast:'forest'};
 const BRANCH_EDGE_ONLY = {coast:true};
 const BRANCH_EFFECT_FLAVOR = {
@@ -1637,12 +1648,12 @@ const ARTIFACT_ACTION_TYPE = {mat:'economy', prov:'economy', gold:'economy', def
 const ACTION_TYPE_META = {economy:{label:'Економіка', icon:'ph-coins'}, defense:{label:'Оборона', icon:'ph-shield-check'}, movement:{label:'Рух', icon:'ph-boat'}, cleanse:{label:'Очищення', icon:'ph-sparkle'}};
 const SPHERE_META = {mat:'Ремесло', prov:'Поля', gold:'Торгівля', def:'Оборона', exp:'Мандри', pen:'Загін', any:'Будь-яка'};
 const ARTIFACTS = [
-  {name:'Підкова щастя', branch:'mat', level:'weak', slava:1, icon:'ph-horse', actionType:'economy', cost:{mat:2,gold:1,prov:1}, bonusAmount:1, localShield:true},
-  {name:'Освячений клинок', branch:'mat', level:'strong', slava:3, icon:'ph-sword', actionType:'economy', cost:{mat:2,gold:1}, bonusAmount:2, localShield:true},
+  {name:'Підкова щастя', branch:'mat', level:'weak', slava:1, icon:'ph-horse', actionType:'economy', cost:{mat:2,gold:1,prov:1}, bonusAmount:1, localShield:true, doubleTrigger:true},
+  {name:'Освячений клинок', branch:'mat', level:'strong', slava:3, icon:'ph-sword', actionType:'economy', cost:{mat:2,gold:1}, bonusAmount:2, localShield:true, klynok:true},
   {name:'Часник-оберіг', branch:'prov', level:'weak', slava:1, icon:'ph-leaf', actionType:'economy', cost:{prov:2,mat:1,gold:1}, bonusAmount:1, localShield:true},
-  {name:'Магічна діжа', branch:'prov', level:'strong', slava:3, icon:'ph-cooking-pot', actionType:'economy', cost:{prov:2,gold:1}, bonusAmount:2, localShield:true},
+  {name:'Магічна діжа', branch:'prov', level:'strong', slava:3, icon:'ph-cooking-pot', actionType:'economy', cost:{prov:2,gold:1}, bonusAmount:2, localShield:true, byproduct:true},
   {name:'Чучело-талісман', branch:'gold', level:'weak', slava:1, icon:'ph-coin', actionType:'economy', cost:{gold:2,mat:1,prov:1}, bonusAmount:1, localShield:true},
-  {name:'Лялька-мотанка', branch:'gold', level:'strong', slava:3, icon:'ph-flower', actionType:'economy', cost:{gold:2}, bonusAmount:2, localShield:true},
+  {name:'Лялька-мотанка', branch:'gold', level:'strong', slava:3, icon:'ph-flower', actionType:'economy', cost:{gold:2}, bonusAmount:2, localShield:true, doubleSpirit:true},
   {name:'Стріляний капшук', branch:'def', level:'weak', slava:2, icon:'ph-shield', actionType:'defense', cost:{mat:2,prov:1,gold:1}, bonusAmount:2, localShield:true},
   {name:'Освячений хрест', branch:'def', level:'strong', slava:4, icon:'ph-cross', actionType:'defense', cost:{gold:1,mat:1}, bonusAmount:3, localShield:true},
   {name:'Компас мандрівника', branch:'exp', level:'weak', slava:2, icon:'ph-compass', actionType:'movement', cost:{mat:2,gold:1,prov:1}, bonusAmount:1, localShield:true, carryMoves:true},
@@ -1868,13 +1879,13 @@ const DECKS = {
     {name:ARTIFACTS[2].name, type:'artifact', icon:ARTIFACTS[2].icon, desc:'Умови: Харчі.', branch:ARTIFACTS[2].branch, level:ARTIFACTS[2].level, slava:ARTIFACTS[2].slava}
   ],
   mid: [
-    {name:'Чугайстер', type:'creature', icon:'ph-shield', desc:'Добрий лісовий велет, що б\u2019ється зі злими духами.', reward:'Разово: −2 до треку нападу', instantEffect:{attackReduce:2}, settleBranch:'def', settleDesc:'Оселити в оборонну будівлю: −1 до порогу нападу назавжди', settleEffect:{defReduce:1}},
+    {name:'Чугайстер', type:'creature', icon:'ph-shield', desc:'Добрий лісовий велет, вартує громаду.', reward:'Разово: −2 до треку нападу', instantEffect:{attackReduce:2}, settleBranch:'def', settleDesc:'Оселити в оборонну будівлю: −1 до порогу нападу назавжди; +1 Слави за кожну успішну спільну оборону', settleEffect:{defReduce:1, chugaister:1}},
     {name:'Потерчата', type:'creature', icon:'ph-ghost', desc:'Неспокійні душі, тривожна знахідка.', reward:'Разово: +1 до треку нападу, +2 Слави', instantEffect:{attackReduce:-1,inf:2}, settleBranch:null},
     {name:'Забутий склад', type:'resource', icon:'ph-package', desc:'Старі запаси під завалом.', reward:'+2 Припасів, +1 Скарб', effect:{mat:2,gold:1}},
-    {name:'Лісовик', type:'creature', icon:'ph-leaf', desc:'Хазяїн лісу, прихильний до тих, хто його поважає.', reward:'Разово: −1 до треку нападу', instantEffect:{attackReduce:1}, settleBranch:'prov', settleDesc:'Оселити в Хутір/Млин/Пекарню: +1 Х за роботу назавжди', settleEffect:{prov:1}},
-    {name:'Провідник порогів', type:'creature', icon:'ph-compass-tool', desc:'Знає порожні місцини серед порогів.', reward:'Разово: розсіює туман над 2-3 випадковими закритими вузлами Походу (видно тип, не саму нагороду)', instantEffect:{attackReduce:0, revealTiles:true}, settleBranch:null},
-    {name:'Овінник', type:'creature', icon:'ph-barn', desc:'Охоронець клуні та врожаю.', reward:'Оселити в Хутір', instantEffect:{attackReduce:0}, settleBranch:'prov', settleDesc:'Оселити в Хутір: +1 Х за роботу назавжди', settleEffect:{prov:1}},
-    {name:'Блуд', type:'creature', icon:'ph-warning-circle', desc:'Заводить ворожі загони в хащі на підступах до Поселення.', reward:'Оселити в Частокіл', instantEffect:{attackReduce:0}, settleBranch:'def', settleDesc:'Оселити в Частокіл: −1 напад пасивно назавжди', settleEffect:{defReduce:1}},
+    {name:'Лісовик', type:'creature', icon:'ph-leaf', desc:'Хазяїн лісу, відчуває сакральні місця.', reward:'Оселити в Хутір/Млин/Пекарню', instantEffect:{attackReduce:1}, settleBranch:'prov', settleDesc:'Оселити в Хутір/Млин/Пекарню: +1 Х за роботу назавжди; плюс +1 Х щораунду за кожен сусідній Супер-Гекс', settleEffect:{prov:1, lisovyk:1}},
+    {name:'Провідник порогів', type:'creature', icon:'ph-compass-tool', desc:'Знає таємні фарватери серед порогів.', reward:'Оселити в Пристань', instantEffect:{attackReduce:0, revealTiles:true}, settleBranch:['exp','seaport'], settleDesc:'Оселити в Пристань: +1 крок Чайки назавжди', settleEffect:{extraShipMoves:1}},
+    {name:'Овінник', type:'creature', icon:'ph-barn', desc:'Охоронець клуні та врожаю.', reward:'Оселити в Хутір', instantEffect:{attackReduce:0}, settleBranch:'prov', settleDesc:'Оселити в Хутір: +1 Х за роботу назавжди; на початку раунду +1 Слави, якщо в запасі ≥ 5 Харчів', settleEffect:{prov:1, ovinnyk:1}},
+    {name:'Блуд', type:'creature', icon:'ph-warning-circle', desc:'Наводить туман на підступах до власних земель.', reward:'Оселити в оборонну будівлю', instantEffect:{attackReduce:0}, settleBranch:'def', settleDesc:'Оселити в оборонну будівлю: −1 напад назавжди; сусідні тайли коштують супернику +1 Ск при будівництві', settleEffect:{defReduce:1, blud:1}},
     {name:ARTIFACTS[6].name, type:'artifact', icon:ARTIFACTS[6].icon, desc:'Умови: Оборона.', branch:ARTIFACTS[6].branch, level:ARTIFACTS[6].level, slava:ARTIFACTS[6].slava},
     {name:ARTIFACTS[5].name, type:'artifact', icon:ARTIFACTS[5].icon, desc:'Умови: Скарб.', branch:ARTIFACTS[5].branch, level:ARTIFACTS[5].level, slava:ARTIFACTS[5].slava}
   ],
@@ -1885,10 +1896,10 @@ const DECKS = {
     {name:'Змій-Полоз', type:'creature', icon:'ph-dice-five', desc:'Підземний охоронець скарбів, грає з тими, хто копає глибоко.', reward:'Оселити в Шахту', instantEffect:{attackReduce:0}, settleBranch:'mine', settleDesc:'Оселити в Шахту: щоразу коли робітник працює тут — 50/50: успіх +1/+2/+3 Ск (за тіром) зверху, невдача — робітник нічого не приносить', settleEffect:{polozRisk:1}},
     {name:'Смолянка', type:'creature', icon:'ph-flame', desc:'Дух чорного диму, живе біля прибережних смолярень.', reward:'Оселити в Смолярню', instantEffect:{attackReduce:0}, settleBranch:'coast', settleDesc:'Оселити в Смолярню: разово +2 Ск при заселенні, постійно +1 Пр за роботу', settleEffect:{mat:1,smolyankaBonus:1}},
     {name:'Водяник', type:'creature', icon:'ph-waves', desc:'Хазяїн порогів і річок.', reward:'Разово: −1 до треку нападу', instantEffect:{attackReduce:1}, settleBranch:['exp','seaport','starter'], settleDesc:'Оселити в Пристань/Курінь/Вишку: +1 Скарбу за роботу назавжди', settleEffect:{gold:1}},
-    {name:'Мавка', type:'creature', icon:'ph-flower', desc:'Двоїста душа — і добра, і небезпечна.', reward:'Разово: −2 до треку нападу', instantEffect:{attackReduce:2}, settleBranch:'any', settleDesc:'Оселити в БУДЬ-ЯКУ будівлю: +1 Слава одразу', settleEffect:{inf:1}},
-    {name:'Домовик', type:'creature', icon:'ph-house', desc:'Дух хатнього вогнища й ремесла.', reward:'Разово: −1 до треку нападу', instantEffect:{attackReduce:1}, settleBranch:'mat', settleDesc:'Оселити в Майстерню/Кузню/Оружейну: +1 Припас за роботу назавжди', settleEffect:{mat:1}},
-    {name:'Скарбник', type:'creature', icon:'ph-vault', desc:'Дух багатства, збільшує монети з базару.', reward:'Оселити в Базар', instantEffect:{attackReduce:0}, settleBranch:'gold', settleDesc:'Оселити в Базар: +1 Ск за роботу назавжди', settleEffect:{gold:1}},
-    {name:'Перелесник', type:'creature', icon:'ph-wind', desc:'Вогняний дух натхнення, прискорює виправи мандрівників.', reward:'Оселити в Пристань', instantEffect:{attackReduce:0}, settleBranch:'exp', settleDesc:'Оселити в Пристань: +1 крок Чайки назавжди', settleEffect:{extraShipMoves:1}},
+    {name:'Мавка', type:'creature', icon:'ph-flower', desc:'Двоїста душа — кличе до праці двох замість одного.', reward:'Оселити в будь-яку будівлю', instantEffect:{attackReduce:2}, settleBranch:'any', settleDesc:'Оселити в БУДЬ-ЯКУ будівлю: +1 Слава одразу; будівля вміщає +1 робітника більше', settleEffect:{inf:1, mavka:1}},
+    {name:'Домовик', type:'creature', icon:'ph-house', desc:'Дух родинного вогнища, живе в Курені.', reward:'Оселити в Курінь', instantEffect:{attackReduce:1}, settleBranch:'starter', settleDesc:'Оселити в Курінь: видобуток росте з тіром Куреня (Т1 → +1, Т2 → +2, Т3 → +3 на вибір); авто-закриває 1 вимогу Загрози', settleEffect:{domovyk:1}},
+    {name:'Скарбник', type:'creature', icon:'ph-vault', desc:'Дух багатства, наживається на чужих торгах.', reward:'Оселити в Базар', instantEffect:{attackReduce:0}, settleBranch:'gold', settleDesc:'Оселити в Базар: +1 Ск за роботу назавжди; +1 Ск щоразу, коли суперник перебиває вашу ставку на аукціоні', settleEffect:{gold:1, skarbnyk:1}},
+    {name:'Перелесник', type:'creature', icon:'ph-wind', desc:'Вогняний дух натхнення, прискорює виправи мандрівників.', reward:'Оселити в Пристань', instantEffect:{attackReduce:0}, settleBranch:'exp', settleDesc:'Оселити в Пристань: +2 кроки Чайки назавжди; невитрачені кроки конвертуються у Славу (2 кроки = 1 Слава)', settleEffect:{extraShipMoves:2, perelesnyk:1}},
     {name:ARTIFACTS[9].name, type:'artifact', icon:ARTIFACTS[9].icon, desc:'Умови: Мандри.', branch:ARTIFACTS[9].branch, level:ARTIFACTS[9].level, slava:ARTIFACTS[9].slava},
     {name:ARTIFACTS[1].name, type:'artifact', icon:ARTIFACTS[1].icon, desc:'Умови: Припаси.', branch:ARTIFACTS[1].branch, level:ARTIFACTS[1].level, slava:ARTIFACTS[1].slava}
   ]
@@ -2176,6 +2187,12 @@ class Component extends DCLogic {
     this.state.players[pk].gold -= (nextBid - (this.state.auctionEscrow[pk]||0));
     this.state.auctionEscrow[pk]=nextBid;
     this.state.auctionBid[pk]=nextBid;
+    const foe=pk==='p1'?'p2':'p1';
+    if(this.hasSpiritKey(foe,'skarbnyk')){
+      this.applyEffect(this.state.players[foe],{gold:1});
+      this.trackRes(foe,{gold:1});
+      this.logMsg('«Скарбник»: '+this.pName(foe)+' отримав +1 Ск за перебиту ставку.');
+    }
     this.state.auctionBidPop=pk;
     setTimeout(()=>{ this.state.auctionBidPop=null; this.forceUpdate(); }, 400);
     const otherKey=pk==='p1'?'p2':'p1';
@@ -2457,6 +2474,28 @@ class Component extends DCLogic {
   }
   shipMovesTotal(pKey){ const raw=this.props && this.props.startingShipMoves; const n=parseInt(raw,10); const base=(raw!=null && !isNaN(n)) ? n : 3; const p=this.state.players[pKey]; return base+(p.ship-1)+(p.ship>=5?1:0)+(p.extraShipMoves||0); }
   shamansTotal(pKey){ const raw=this.props && this.props.startingShamans; const n=parseInt(raw,10); const base=(raw!=null && !isNaN(n)) ? n : 1; return base+(this.state.players[pKey].shamansCapBonus||0); }
+  hasCrossArtifact(pKey){
+    const ownerNum=pKey==='p1'?1:2;
+    return this.state.board.some(c=>c.building && c.building.owner===ownerNum && c.building.artifact && c.building.artifact.name==='Освячений хрест');
+  }
+  hasCompassArtifact(pKey){
+    const ownerNum=pKey==='p1'?1:2;
+    return this.state.board.some(c=>c.building && c.building.owner===ownerNum && c.building.artifact && c.building.artifact.name==='Компас мандрівника');
+  }
+  lisovykBonusCount(pKey){
+    const ownerNum=pKey==='p1'?1:2;
+    let total=0;
+    this.state.board.forEach((c,idx)=>{
+      if(!(c.building && c.building.owner===ownerNum && c.building.spirit && c.building.spirit.settleEffect && c.building.spirit.settleEffect.lisovyk)) return;
+      const n=this.neighbors(idx).filter(ni=>{ const nb=this.state.board[ni]; return nb && nb.flipped && !nb.burnt; }).length;
+      total+=n;
+    });
+    return total;
+  }
+  hasSpiritKey(pKey,key){
+    const ownerNum=pKey==='p1'?1:2;
+    return this.state.board.some(c=>c.building && c.building.owner===ownerNum && c.building.spirit && c.building.spirit.settleEffect && c.building.spirit.settleEffect[key]);
+  }
   hasCarryMovesArtifact(pKey){
     const ownerNum=pKey==='p1'?1:2;
     return this.state.board.some(c=>c.building && c.building.owner===ownerNum && c.building.artifact && c.building.artifact.carryMoves);
@@ -2811,10 +2850,16 @@ class Component extends DCLogic {
     if(!this.state.sketchEquippedThisRound) this.state.sketchEquippedThisRound={};
     if(this.state.sketchEquippedThisRound[pKey]){ alert('Чайку вже споряджено цього раунду.'); return; }
     const zone=this.sketchZoneForShip(pKey);
-    const cost=ZONE_COST[zone];
+    const rawCost=ZONE_COST[zone];
+    const cost={...rawCost};
+    if(this.hasCompassArtifact(pKey)){
+      const order=['mat','prov','gold'];
+      for(const k of order){ if(cost[k]>0){ cost[k]--; if(!cost[k]) delete cost[k]; break; } }
+    }
     const p=this.state.players[pKey];
     if(!this.costOk(p,cost)){ alert('Недостатньо ресурсів, щоб спорядити похід («'+ZONE_LABEL[zone]+'»).'); return; }
     this.payCost(p,cost);
+    if(this.hasCompassArtifact(pKey)) this.logMsg('«Компас мандрівника»: спорядження дешевше на 1 ресурс.');
     this.state.sketchEquippedThisRound[pKey]=true;
     const existing=this.state.sketchShips[pKey];
     if(existing){
@@ -3516,11 +3561,26 @@ class Component extends DCLogic {
     const cell=this.state.board[idx];
     if(!cell || !cell.flipped || cell.burnt) return;
     this.pushUndo();
+    const pKey='p'+this.state.activePlayer;
+    const pRes=this.state.players[pKey];
+    const bladeIdx=this.klynokCellIdx(pKey,idx);
+    if(bladeIdx!=null){
+      cell.flipped=false;
+      delete cell.flipVariant;
+      const bcell=this.state.board[bladeIdx];
+      if(bcell && bcell.building && bcell.building.artifact) bcell.building.artifact.klynokUsed=true;
+      this.applyEffect(pRes,{gold:3});
+      this.spawnFlyUp(idx,{gold:3});
+      this.state.burnFx=idx;
+      setTimeout(()=>{ if(this.state.burnFx===idx){ this.state.burnFx=null; this.forceUpdate(); } }, 650);
+      this.logMsg('«Освячений клинок»: '+this.pName(pKey)+' розсік скверну гекса '+(idx+1)+': +3 Скарбу. Гекс став звичайним, оберіг витрачено.');
+      this.state.flipHoverIdx=null;
+      this.forceUpdate();
+      return;
+    }
     cell.burnt=true;
     cell.flipped=false;
     delete cell.flipVariant;
-    const pKey='p'+this.state.activePlayer;
-    const pRes=this.state.players[pKey];
     this.applyEffect(pRes,{gold:3,inf:2});
     this.spawnFlyUp(idx,{gold:3,inf:2});
     this.state.burnFx=idx;
@@ -3528,6 +3588,14 @@ class Component extends DCLogic {
     this.logMsg((pKey==='p1'?'Гравець 1':'Гравець 2')+' вичерпав Сакральність гекса '+(idx+1)+': +3 Скарбу, +2 Слави. Ефекти зникли назавжди.');
     this.state.flipHoverIdx=null;
     this.forceUpdate();
+  }
+  klynokCellIdx(pKey,superIdx){
+    const ownerNum=pKey==='p1'?1:2;
+    for(const ni of this.neighbors(superIdx)){
+      const c=this.state.board[ni];
+      if(c && c.building && c.building.owner===ownerNum && c.building.artifact && c.building.artifact.name==='Освячений клинок' && !c.building.artifact.klynokUsed) return ni;
+    }
+    return null;
   }
   cellClick(idx,evt){
     const cellPre=this.state.board[idx];
@@ -3860,7 +3928,8 @@ class Component extends DCLogic {
     const terrainBonusMap={forest:'mat', field:'prov', stone:'gold'};
     const bonus = terrainBonusMap[cell.terrain]===resKey ? 1 : 0;
     const kurinBonus = (building.kurinBonus && building.kurinBonus[resKey]) || 0;
-    const total=1+bonus+kurinBonus;
+    const domovyk = (building.spirit && building.spirit.settleEffect && building.spirit.settleEffect.domovyk) ? (building.tier||1) : 0;
+    const total=1+bonus+kurinBonus+domovyk;
     this.applyEffect(pRes,{[resKey]:total});
     this.trackRes(pKey,{[resKey]:total});
     this.spawnFlyUp(idx,{[resKey]:total});
@@ -3938,7 +4007,7 @@ class Component extends DCLogic {
     if(!hasShield && (building.branch==='prov'||building.branch==='pen') && this.state.fieldsBlocked>0){ alert('Поля заблоковані ще на '+this.state.fieldsBlocked+' хід(и) через Дике полювання.'); return; }
     if(!hasShield && building.branch==='mat' && this.state.forestBlocked>0){ alert('Ліс заблокований ще на '+this.state.forestBlocked+' хід(и) через Навалу мороку.'); return; }
     if(!hasShield && ['mat','prov','gold'].includes(building.branch) && this.state.basicBuildingsBlocked>0){ alert('Ця будівля заблокована ще на '+this.state.basicBuildingsBlocked+' хід(и) після Останнього штурму.'); return; }
-    const capacity=building.capacity||1;
+    const capacity=(building.capacity||1)+((building.spirit && building.spirit.settleEffect && building.spirit.settleEffect.mavka)?1:0);
     if(building.workedBy.length>=capacity){ alert('Усі слоти цієї будівлі зайняті цього раунду ('+capacity+'/'+capacity+').'); return; }
     if(pRes.workers<=0){ alert('Немає вільних робітників цього раунду.'); return; }
     if(building.turVil && building.branch==='prov' && building.tier===3){
@@ -3956,7 +4025,7 @@ class Component extends DCLogic {
     building.workedBy.push(pKey);
     const effect={...(building.effect||{})};
     if(building.branch==='mat' && this.forestAuraNeighbor(idx)) effect.mat=(effect.mat||0)+1;
-    const SPECIAL_SPIRIT_KEYS=['oxen','turVil','polozRisk','anchutka','smolyankaBonus','defReduce','extraShipMoves'];
+    const SPECIAL_SPIRIT_KEYS=['oxen','turVil','polozRisk','anchutka','smolyankaBonus','defReduce','extraShipMoves','perelesnyk','skarbnyk','lisovyk','ovinnyk','blud','domovyk','smolyankaBank','chugaister','mavka'];
     if(building.spirit && building.spirit.settleEffect){
       for(const k in building.spirit.settleEffect){
         if(SPECIAL_SPIRIT_KEYS.includes(k)) continue;
@@ -3986,6 +4055,15 @@ class Component extends DCLogic {
     }
     if(building.artifact && building.artifact.bonusAmount && ['mat','prov','gold'].includes(building.branch)){
       effect[building.branch]=(effect[building.branch]||0)+building.artifact.bonusAmount;
+    }
+    if(building.artifact && building.artifact.doubleSpirit && building.spirit){
+      ['mat','prov','gold'].forEach(k=>{ if(effect[k]) effect[k]=effect[k]*2; });
+    }
+    if(building.artifact && building.artifact.doubleTrigger && building.spirit){
+      ['mat','prov','gold'].forEach(k=>{ if(effect[k]) effect[k]=effect[k]*2; });
+    }
+    if(building.artifact && building.artifact.byproduct && effect.prov){
+      effect.gold=(effect.gold||0)+1;
     }
     if(Object.keys(effect).length){ this.applyEffect(pRes,effect); this.trackRes(pKey,effect); this.spawnFlyUp(idx,effect); }
     const ownerNote='';
@@ -4051,7 +4129,7 @@ class Component extends DCLogic {
     building.workedBy.push(pKey);
     const effect={...(building.effect||{})};
     if(building.branch==='mat' && this.forestAuraNeighbor(idx)) effect.mat=(effect.mat||0)+1;
-    const SPECIAL_SPIRIT_KEYS=['oxen','turVil','polozRisk','anchutka','smolyankaBonus','defReduce','extraShipMoves'];
+    const SPECIAL_SPIRIT_KEYS=['oxen','turVil','polozRisk','anchutka','smolyankaBonus','defReduce','extraShipMoves','perelesnyk','skarbnyk','lisovyk','ovinnyk','blud','domovyk','smolyankaBank','chugaister','mavka'];
     if(building.spirit && building.spirit.settleEffect){
       for(const k in building.spirit.settleEffect){
         if(SPECIAL_SPIRIT_KEYS.includes(k)) continue;
@@ -4067,6 +4145,15 @@ class Component extends DCLogic {
     }
     if(building.artifact && building.artifact.bonusAmount && ['mat','prov','gold'].includes(building.branch)){
       effect[building.branch]=(effect[building.branch]||0)+building.artifact.bonusAmount;
+    }
+    if(building.artifact && building.artifact.doubleSpirit && building.spirit){
+      ['mat','prov','gold'].forEach(k=>{ if(effect[k]) effect[k]=effect[k]*2; });
+    }
+    if(building.artifact && building.artifact.doubleTrigger && building.spirit){
+      ['mat','prov','gold'].forEach(k=>{ if(effect[k]) effect[k]=effect[k]*2; });
+    }
+    if(building.artifact && building.artifact.byproduct && effect.prov){
+      effect.gold=(effect.gold||0)+1;
     }
     if(Object.keys(effect).length){ this.applyEffect(pRes,effect); this.trackRes(pKey,effect); this.spawnFlyUp(idx,effect); }
     this.logMsg('Гравець '+this.state.activePlayer+' поставив робітника на «'+building.name+'» (клітина '+(idx+1)+') — дохід отримано.');
@@ -4124,7 +4211,7 @@ class Component extends DCLogic {
       const upgEffect={...def.effect};
       if(prevSpirit && prevSpirit.settleEffect){
         for(const k in prevSpirit.settleEffect){
-          if(['oxen','turVil','polozRisk','anchutka','smolyankaBonus','defReduce','extraShipMoves'].includes(k)) continue;
+          if(['oxen','turVil','polozRisk','anchutka','smolyankaBonus','defReduce','extraShipMoves','perelesnyk','skarbnyk','lisovyk','ovinnyk','blud','domovyk','smolyankaBank','chugaister','mavka'].includes(k)) continue;
           upgEffect[k]=(upgEffect[k]||0)+prevSpirit.settleEffect[k];
         }
       }
@@ -4209,6 +4296,17 @@ class Component extends DCLogic {
     this.state.players.p2.workers=numW(this.props && this.props.startingWorkers, 5)+this.oxBonus('p2')+(this.state.players.p2.workerCapBonus||0);
     this.state.players.p1.shamans=this.shamansTotal('p1');
     this.state.players.p2.shamans=this.shamansTotal('p2');
+    ['p1','p2'].forEach(pk=>{
+      if(this.hasSpiritKey(pk,'perelesnyk')){
+        const sh=this.state.sketchShips && this.state.sketchShips[pk];
+        const left=sh?Math.max(0,sh.movesLeft||0):0;
+        const gained=Math.floor(left/2);
+        if(gained>0){ this.applyEffect(this.state.players[pk],{inf:gained}); this.logMsg('«Перелесник»: '+this.pName(pk)+' конвертував '+left+' кроків Чайки в +'+gained+' Слави.'); }
+      }
+      if(this.hasSpiritKey(pk,'ovinnyk') && (this.state.players[pk].prov||0)>=5){ this.applyEffect(this.state.players[pk],{inf:1}); this.logMsg('«Овінник»: '+this.pName(pk)+' — ситна зима, +1 Слави.'); }
+      const lisCount=this.lisovykBonusCount(pk);
+      if(lisCount>0){ this.applyEffect(this.state.players[pk],{prov:lisCount}); this.trackRes(pk,{prov:lisCount}); this.logMsg('«Лісовик»: '+this.pName(pk)+' — сакральний зв’язок дав +'+lisCount+' Х.'); }
+    });
     this.state.sketchEquippedThisRound={p1:false,p2:false};
     this.state.board.forEach(cell=>{ if(cell.building) cell.building.workedBy=[]; });
     if(this.state.fieldsBlocked>0) this.state.fieldsBlocked--;
@@ -4337,6 +4435,15 @@ class Component extends DCLogic {
     this.logMsg(resultText+extraWorkerNote);
     this.state.attackResult=resultText+extraWorkerNote;
     this.state.attackResultSuccess = !(this.state.attackHistory && this.state.attackHistory[this.state.round]==='fail');
+    if(this.state.attackResultSuccess){
+      const b1=Object.values(this.state.bidP1||{}).reduce((a,c)=>a+c,0);
+      const b2=Object.values(this.state.bidP2||{}).reduce((a,c)=>a+c,0);
+      ['p1','p2'].forEach(pk=>{
+        if(this.hasSpiritKey(pk,'chugaister')){ this.applyEffect(this.state.players[pk],{inf:1}); this.logMsg('«Чугайстер»: '+this.pName(pk)+' — вартовий хащів, +1 Слави за успішну оборону.'); }
+      });
+      const leadPk = b1>b2 ? 'p1' : (b2>b1 ? 'p2' : null);
+      if(leadPk && this.hasCrossArtifact(leadPk)){ this.applyEffect(this.state.players[leadPk],{inf:2}); this.logMsg('«Освячений хрест»: '+this.pName(leadPk)+' — +2 Слави за лідерство в захисті.'); }
+    }
     this.state.attackResultConsequence = this.state.attackResultSuccess ? '' : (resultText.replace(/^[^.]*\.\s*/,'')+extraWorkerNote).trim();
     this.state.attackStep=3;
     this.forceUpdate();
@@ -4429,7 +4536,7 @@ class Component extends DCLogic {
       const target=targets[0];
       if(target.building.artifact){ this.logMsg('Старий оберіг «'+target.building.artifact.name+'» замінено на «'+card.name+'».'); }
       const artDef1=ARTIFACTS.find(a=>a.name===card.name);
-      target.building.artifact={name:card.name, icon:card.icon, bonusAmount:artDef1?artDef1.bonusAmount:1, localShield:artDef1?artDef1.localShield:true, branch:artDef1?artDef1.branch:card.branch, carryMoves:!!(artDef1&&artDef1.carryMoves)};
+      target.building.artifact={name:card.name, icon:card.icon, bonusAmount:artDef1?artDef1.bonusAmount:1, localShield:artDef1?artDef1.localShield:true, branch:artDef1?artDef1.branch:card.branch, carryMoves:!!(artDef1&&artDef1.carryMoves), doubleTrigger:!!(artDef1&&artDef1.doubleTrigger), byproduct:!!(artDef1&&artDef1.byproduct), doubleSpirit:!!(artDef1&&artDef1.doubleSpirit)};
       if(target.building.branch==='def' && artDef1) target.building.defReduce=(target.building.defReduce||0)+artDef1.bonusAmount;
       if(target.building.branch==='exp' && artDef1){ this.state.players[pKey].extraShipMoves=(this.state.players[pKey].extraShipMoves||0)+artDef1.bonusAmount; }
       this.triggerPop(this.state.board.indexOf(target));
@@ -4449,7 +4556,7 @@ class Component extends DCLogic {
     if(!cell.building.spirit){ alert('Оберіг можна прикріпити лише до будівлі, де вже оселено Духа.'); return; }
     if(cell.building.artifact){ this.logMsg('Старий оберіг «'+cell.building.artifact.name+'» замінено на «'+card.name+'».'); }
     const artDef2=ARTIFACTS.find(a=>a.name===card.name);
-    cell.building.artifact={name:card.name, icon:card.icon, bonusAmount:artDef2?artDef2.bonusAmount:1, localShield:artDef2?artDef2.localShield:true, branch:artDef2?artDef2.branch:card.branch, carryMoves:!!(artDef2&&artDef2.carryMoves)};
+    cell.building.artifact={name:card.name, icon:card.icon, bonusAmount:artDef2?artDef2.bonusAmount:1, localShield:artDef2?artDef2.localShield:true, branch:artDef2?artDef2.branch:card.branch, carryMoves:!!(artDef2&&artDef2.carryMoves), doubleTrigger:!!(artDef2&&artDef2.doubleTrigger), byproduct:!!(artDef2&&artDef2.byproduct), doubleSpirit:!!(artDef2&&artDef2.doubleSpirit)};
     if(cell.building.branch==='def' && artDef2) cell.building.defReduce=(cell.building.defReduce||0)+artDef2.bonusAmount;
     if(cell.building.branch==='exp' && artDef2){ this.state.players[pKeyNow].extraShipMoves=(this.state.players[pKeyNow].extraShipMoves||0)+artDef2.bonusAmount; }
     this.triggerPop(idx);
@@ -4506,7 +4613,7 @@ class Component extends DCLogic {
       bcell.building.oxCount=oxCount;
       effectLabel='+'+oxCount+' віл(робітник)/раунд';
     } else if(mode==='resource' && card.settleEffect){
-      effectLabel=Object.entries(card.settleEffect).filter(([k])=>!['anchutka','turVil','polozRisk','smolyankaBonus'].includes(k)).map(([k,v])=>k==='defReduce'?('−'+v):(k==='extraShipMoves'?('+'+v+' крок Чайки'):('+'+v+' '+RES_ABBR[k]))).join(', ');
+      effectLabel=Object.entries(card.settleEffect).filter(([k])=>!['anchutka','turVil','polozRisk','smolyankaBonus','perelesnyk','skarbnyk','lisovyk','ovinnyk','blud','domovyk','smolyankaBank','chugaister','mavka'].includes(k)).map(([k,v])=>k==='defReduce'?('−'+v):(k==='extraShipMoves'?('+'+v+' крок Чайки'):('+'+v+' '+RES_ABBR[k]))).join(', ');
     }
     bcell.building.spirit={name:card.name, icon:card.icon, mode, effectLabel, power:card.summonPower||1, settleEffect:(mode==='resource'?card.settleEffect:null)};
     this.triggerPop(idx);
@@ -4544,7 +4651,7 @@ class Component extends DCLogic {
       bcell.building.oxCount=oxCount;
       effectLabel='+'+oxCount+' віл(робітник)/раунд';
     } else if(mode==='resource' && card.settleEffect){
-      effectLabel=Object.entries(card.settleEffect).filter(([k])=>!['anchutka','turVil','polozRisk','smolyankaBonus'].includes(k)).map(([k,v])=>k==='defReduce'?('−'+v):(k==='extraShipMoves'?('+'+v+' крок Чайки'):('+'+v+' '+RES_ABBR[k]))).join(', ');
+      effectLabel=Object.entries(card.settleEffect).filter(([k])=>!['anchutka','turVil','polozRisk','smolyankaBonus','perelesnyk','skarbnyk','lisovyk','ovinnyk','blud','domovyk','smolyankaBank','chugaister','mavka'].includes(k)).map(([k,v])=>k==='defReduce'?('−'+v):(k==='extraShipMoves'?('+'+v+' крок Чайки'):('+'+v+' '+RES_ABBR[k]))).join(', ');
     } else if(mode==='slava'){
       effectLabel='+2 Сл (одноразово)';
     }
@@ -4914,7 +5021,7 @@ class Component extends DCLogic {
     if(card.type==='building' && card.building && card.building.branch==='unique') return 'Унікальні';
     if(card.type==='building' && card.building) return BRANCH_LABELS[card.building.branch]||null;
     if(card.type==='artifact' && card.branch) return BRANCH_LABELS[card.branch]||null;
-    if(card.type==='creature' && card.settleBranch && card.settleBranch!=='any') return BRANCH_LABELS[card.settleBranch]||null;
+    if(card.type==='creature' && card.settleBranch && card.settleBranch!=='any') return branchLabelOf(card.settleBranch)||null;
     return null;
   }
   triggerCardFly(card,evt){
@@ -5270,7 +5377,8 @@ class Component extends DCLogic {
           const terrainBonusMap={forest:'mat', field:'prov', stone:'gold'};
           const bonusKey=terrainBonusMap[cell.terrain];
           const kb=b.kurinBonus||{};
-          const amt=(k)=>1+(bonusKey===k?1:0)+(kb[k]||0);
+          const dmv=(b.spirit && b.spirit.settleEffect && b.spirit.settleEffect.domovyk)?(b.tier||1):0;
+          const amt=(k)=>1+(bonusKey===k?1:0)+(kb[k]||0)+dmv;
           const fmt=(v)=>v>1?('+'+v):'';
           metaTokens=[
             {icon:RES_ICON.mat, text:fmt(amt('mat'))},
@@ -5289,7 +5397,7 @@ class Component extends DCLogic {
         buildingIcon = b.branch==='starter' ? ({1:'ph-tent',2:'ph-buildings',3:'ph-castle-turret'}[b.tier||1]) : (BUILDING_ICON[b.name]||(BRANCH_ICON[b.branch]||'ph-house'));
         showUpgradeBadge = false;
         const wb=Array.isArray(b.workedBy)?b.workedBy:[];
-        const cap=b.capacity||1;
+        const cap=(b.capacity||1)+((b.spirit && b.spirit.settleEffect && b.spirit.settleEffect.mavka)?1:0);
         if(b.branch==='pen' || b.branch==='def' || (b.branch==='unique' && b.name!=='Обережна каплиця')){
           workerSlotLabel = b.branch==='pen' ? (b.spirit ? '' : 'Дух') : '';
           workerSlotStyle='background:transparent;color:var(--color-text);opacity:0.6;border:1px dashed var(--color-divider);';
@@ -6288,7 +6396,7 @@ class Component extends DCLogic {
       const canAfford = cardCost ? this.costOk(pResHand, cardCost) : true;
       return {
       cardType:c.type,
-      icon:TYPE_ICON[c.type]||c.icon, name:c.name, typeLabel: (c.building && c.building.branch==='seaport') ? 'Похід' : (c.type==='building' && c.building && c.building.branch==='unique') ? 'Унікальні' : (c.type==='building' && c.building) ? BRANCH_LABELS[c.building.branch] : (c.type==='artifact' && c.branch) ? BRANCH_LABELS[c.branch] : (c.type==='creature' && c.settleBranch && c.settleBranch!=='any') ? BRANCH_LABELS[c.settleBranch] : this.typeLabel(c.type),
+      icon:TYPE_ICON[c.type]||c.icon, name:c.name, typeLabel: (c.building && c.building.branch==='seaport') ? 'Похід' : (c.type==='building' && c.building && c.building.branch==='unique') ? 'Унікальні' : (c.type==='building' && c.building) ? BRANCH_LABELS[c.building.branch] : (c.type==='artifact' && c.branch) ? BRANCH_LABELS[c.branch] : (c.type==='creature' && c.settleBranch && c.settleBranch!=='any') ? (branchLabelOf(c.settleBranch)||this.typeLabel(c.type)) : this.typeLabel(c.type),
       desc: (desc && typeof desc==='object') ? '' : desc,
       reqLine: (desc && typeof desc==='object') ? desc.reqLine : '',
       costText: (desc && typeof desc==='object') ? (desc.costText||'') : '',
@@ -6479,11 +6587,12 @@ class Component extends DCLogic {
         const terrainBonusMap={forest:'mat', field:'prov', stone:'gold'};
         const bonusKey = cell ? terrainBonusMap[cell.terrain] : null;
         const kb = (cell && cell.building.kurinBonus) || {};
+        const dmvB = (cell && cell.building.spirit && cell.building.spirit.settleEffect && cell.building.spirit.settleEffect.domovyk) ? (cell.building.tier||1) : 0;
         return [
           {resKey:'mat',label:'Припаси',icon:'ph-tree'},
           {resKey:'prov',label:'Харчі',icon:'ph-plant'},
           {resKey:'gold',label:'Скарб',icon:'ph-coins'}
-        ].map(o=>{ const amt=1+(o.resKey===bonusKey?1:0)+(kb[o.resKey]||0); return {...o, bonus:o.resKey===bonusKey, amountLabel:'+'+amt, onClick:()=>this.assignKurinWork(o.resKey)}; });
+        ].map(o=>{ const amt=1+(o.resKey===bonusKey?1:0)+(kb[o.resKey]||0)+dmvB; return {...o, bonus:o.resKey===bonusKey, amountLabel:'+'+amt, onClick:()=>this.assignKurinWork(o.resKey)}; });
       })(),
       kurinUpgradeInfo: (()=>{
         const pKeyNow='p'+s.activePlayer;
@@ -6847,18 +6956,29 @@ class Component extends DCLogic {
           return list.map((c,i)=>({
             c0:c.name,
             c1: (c.instantEffect && c.instantEffect.attackReduce>0) ? ('−'+c.instantEffect.attackReduce+' до треку нападу') : (c.instantEffect && c.instantEffect.attackReduce<0) ? ('+'+(-c.instantEffect.attackReduce)+' до треку нападу') : (c.instantEffect && c.instantEffect.revealTiles?'відкриває тайли Походу':'без ефекту'),
-            c2: c.settleBranch ? (c.settleBranch==='any'?'будь-яка будівля':'гілка: '+(BRANCH_LABELS[c.settleBranch]||c.settleBranch)) : '—',
+            c2: c.settleBranch ? (c.settleBranch==='any'?'будь-яка будівля':'гілка: '+branchLabelsAll(c.settleBranch)) : '—',
             c3: c.settleEffect ? (()=>{
-              const flags=['anchutka','turVil','polozRisk','smolyankaBonus'];
+              const flags=['anchutka','turVil','polozRisk','smolyankaBonus','domovyk','mavka','chugaister','lisovyk','ovinnyk','skarbnyk','perelesnyk','blud','smolyankaBank'];
               const parts=[];
-              if(c.settleEffect.anchutka) parts.push('+1 Пр за роботу назавжди, +1 Пр за кожен тір будівлі');
+              if(c.settleEffect.anchutka) parts.push('+1 Пр за роботу, плюс +1 Пр за кожен тір будівлі');
               if(c.settleEffect.turVil) parts.push('+1 Х за кожне сусіднє Поле (Пекарня Т3: вибір +3Х або +1 Слави)');
               if(c.settleEffect.polozRisk) parts.push('50/50: +1/+2/+3 Ск (за тіром) або нічого');
               if(c.settleEffect.smolyankaBonus) parts.push('разово +2 Ск при заселенні');
+              if(c.settleEffect.domovyk) parts.push('видобуток Куреня росте з тіром (Т1 → +1, Т2 → +2, Т3 → +3 на вибір ресурсу)');
+              if(c.settleEffect.mavka) parts.push('будівля вміщає +1 робітника');
+              if(c.settleEffect.chugaister) parts.push('+1 Слави за кожну успішну спільну оборону');
+              if(c.settleEffect.lisovyk) parts.push('+1 Х щораунду за кожен сусідній Супер-Гекс');
+              if(c.settleEffect.ovinnyk) parts.push('+1 Слави на початку раунду при ≥5 Харчів');
+              if(c.settleEffect.skarbnyk) parts.push('+1 Ск щоразу, коли суперник перебиває вашу ставку');
+              if(c.settleEffect.perelesnyk) parts.push('невитрачені кроки Чайки конвертуються у Славу (2 кроки = 1 Слава)');
+              if(c.settleEffect.blud) parts.push('сусідні тайли коштують супернику +1 Ск при будівництві');
               Object.entries(c.settleEffect).forEach(([k,v])=>{
                 if(flags.includes(k)) return;
+                if(k==='anchutka') return;
+                if(k==='mat' && c.settleEffect.anchutka) return;
                 if(k==='defReduce') parts.push('−'+v+' до Оборони назавжди');
                 else if(k==='extraShipMoves') parts.push('+'+v+' крок Чайки назавжди');
+                else if(k==='inf') parts.push('+'+v+' Слави одразу');
                 else parts.push('+'+v+' '+(RES_ABBR[k]||k)+' за роботу назавжди');
               });
               return parts.join(', ')||'—';
@@ -6885,9 +7005,15 @@ class Component extends DCLogic {
         }
         if(tab==='artifacts'){
           return ARTIFACTS.map((a,i)=>{
-            const eff = a.actionType==='defense' ? ('−'+a.bonusAmount+' до порогу Загрози')
-              : a.actionType==='movement' ? ('+'+a.bonusAmount+' хід Чайки назавжди · невитрачені кроки переносяться в наступний раунд')
+            let eff = a.actionType==='defense' ? ('−'+a.bonusAmount+' до порогу Загрози')
+              : a.actionType==='movement' ? ('+'+a.bonusAmount+' хід Чайки назавжди · невитрачені кроки переносяться')
               : ('+'+a.bonusAmount+' до доходу Духа');
+            if(a.doubleTrigger) eff+=' · подвоює видобуток будівлі з Духом';
+            if(a.doubleSpirit) eff+=' · подвоює видобуток будівлі з Духом';
+            if(a.byproduct) eff+=' · виробництво Харчів дає +1 Скарб';
+            if(a.klynok) eff+=' · разово: розсікає Супер-Гекс поруч (+3 Ск, гекс лишається живим)';
+            if(a.name==='Освячений хрест') eff+=' · +2 Слави за лідерство в захисті';
+            if(a.name==='Компас мандрівника') eff+=' · спорядження Чайки −1 ресурс';
             return {c0:a.name, c1:(BRANCH_LABELS[a.branch]||a.branch)+' ('+(a.level==='strong'?'сильний':'слабший')+')', c2:Object.entries(a.cost).map(([k,v])=>v+' '+RES_ABBR[k]).join(', '), c3:'+'+a.slava+' Слави · '+eff+' · Локальний Щит', onClick:()=>this.debugAddArtifactToHand(i), rowStyle:'cursor:pointer;'};
           });
         }
