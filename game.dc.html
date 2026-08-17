@@ -1108,7 +1108,7 @@
             <button type="button" class="{{ attackStep2BtnClass }}" style="{{ attackStep2BtnStyle }}" onClick="{{ attackStep2Reveal }}">{{ attackStep2BtnLabel }}</button>
           </sc-if>
           <sc-if value="{{ attackStepIs3 }}" hint-placeholder-val="{{ false }}">
-            <button type="button" class="btn btn-primary" onClick="{{ finishAttack }}">Завершити раунд →</button>
+            <button type="button" class="btn btn-primary" onClick="{{ finishAttack }}" disabled="{{ finishAttackDisabled }}">{{ finishAttackLabel }}</button>
           </sc-if>
         </div>
       </div>
@@ -1551,7 +1551,7 @@
 
 
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;startingMat&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Начальні ресурси&quot;},&quot;startingProv&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;3&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Начальні ресурси&quot;},&quot;startingGold&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;3&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Начальні ресурси&quot;},&quot;startingShamans&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;1&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Начальні ресурси&quot;},&quot;startingWorkers&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;15&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Начальні ресурси&quot;},&quot;startingShipMoves&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;7&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Начальні ресурси&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;startingMat&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Начальні ресурси&quot;},&quot;startingProv&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;3&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Начальні ресурси&quot;},&quot;startingGold&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;3&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Начальні ресурси&quot;},&quot;startingShamans&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;1&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Начальні ресурси&quot;},&quot;startingWorkers&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Начальні ресурси&quot;},&quot;startingShipMoves&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;3&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Начальні ресурси&quot;}}">
 const TILE_FLIPS = {
   forest: [
     {key:'aura', name:'Аура Древотвору', icon:'ph-sparkle', marker:'ph-leaf', markerColor:'#10B981', desc:'Сусідні будівлі Припасів: −1 Припас до вартості, +1 до видобутку.'},
@@ -6761,7 +6761,7 @@ class Component extends DCLogic {
       netCodeLabel: (this.net && this.net.code)||'',
       netSeatLabel: (this.net && this.net.seat) ? this.pName(this.net.seat) : '',
       netSeatColor: (this.net && this.net.seat) ? this.pColor(this.net.seat) : 'var(--color-text)',
-      netTurnLocked: this.netLocked(),
+      netTurnLocked: this.netLocked() && !(s.attackModalOpen && s.attackStep===3) && !s.marketAuctionOpen,
       netWaitName: this.pName(this.netActiveSeat()),
       netWaitColor: this.pColor(this.netActiveSeat()),
       setupPlayerNum: s.stage==='setup1'?1:2,
@@ -6937,6 +6937,8 @@ class Component extends DCLogic {
       attackStep2BtnLabel: attackProgressPct>=100?'✨ Відбити Загрозу':'Завершити',
       attackModalOpen: s.attackModalOpen, attackModalDesc, attackDialogTitle, attackStep, attackResult, attackStepIs1, attackStepIs2, attackStepIs3, attackStepIsBid, activeBidTokens, bidTokensP1, bidTokensP2,
       cancelAttackFlow:()=>this.cancelAttackFlow(), attackStep1Next:()=>this.attackStep1Next(), attackStep2Reveal:()=>this.attackStep2Reveal(), finishAttack:()=>this.finishAttack(),
+      finishAttackDisabled: this.netLocked(),
+      finishAttackLabel: this.netLocked() ? ('Очікування: '+this.pName(this.netActiveSeat())) : 'Завершити раунд →',
       settleModalOpen, settleModalTitle, settleOptions, settleNoOptions, cancelSettle:()=>this.cancelSettle(),
       hetmanEraLabel:'Епоха '+hetmanEra+' ('+(hetmanEra===1?'ресурси':hetmanEra===2?'перехід':'слава')+')',
       hetmanPoolCards,
@@ -6956,6 +6958,7 @@ class Component extends DCLogic {
         const passed=s.marketAuctionPassed||{p1:false,p2:false};
         const mk=(pk)=>{
           const other=pk==='p1'?'p2':'p1';
+          const seatLock = !!(this.net && this.net.mode==='online' && this.net.seat!==pk);
           const isLeader=leader===pk;
           const nextBid=curBid+1;
           const pr=s.players[pk];
@@ -6965,9 +6968,9 @@ class Component extends DCLogic {
             Name: this.pName(pk), Color: this.pColor(pk), BorderColor: isLeader?this.pColor(pk):'var(--color-divider)',
             Status: status,
             BidLabel: (curBid===0?'Поставити ':'Перебити (')+nextBid+(curBid===0?'':')'),
-            BidBtnStyle: canAfford&&!isLeader&&!passed[pk] ? ('background:'+this.pColor(pk)+';border-color:'+this.pColor(pk)+';color:#12141c;') : 'opacity:0.5;',
-            BidDisabled: isLeader || passed[pk] || !canAfford,
-            PassDisabled: passed[pk],
+            BidBtnStyle: canAfford&&!isLeader&&!passed[pk]&&!seatLock ? ('background:'+this.pColor(pk)+';border-color:'+this.pColor(pk)+';color:#12141c;') : 'opacity:0.4;',
+            BidDisabled: isLeader || passed[pk] || !canAfford || seatLock,
+            PassDisabled: passed[pk] || seatLock,
           };
         };
         const m1=mk('p1'), m2=mk('p2');
@@ -6988,6 +6991,8 @@ class Component extends DCLogic {
           auctionP2Name:m2.Name, auctionP2Color:m2.Color, auctionP2BorderColor:m2.BorderColor, auctionP2Status:m2.Status, auctionP2BidLabel:m2.BidLabel, auctionP2BidBtnStyle:m2.BidBtnStyle, auctionP2BidDisabled:m2.BidDisabled, auctionP2PassDisabled:m2.PassDisabled,
           auctionP1Bid:()=>this.auctionOutbid('p1'), auctionP2Bid:()=>this.auctionOutbid('p2'),
           auctionP1Pass:()=>this.auctionPass('p1'), auctionP2Pass:()=>this.auctionPass('p2'),
+          auctionSeatLockP1: !!(this.net && this.net.mode==='online' && this.net.seat!=='p1'),
+          auctionSeatLockP2: !!(this.net && this.net.mode==='online' && this.net.seat!=='p2'),
           auctionP1Stack:st1.coins, auctionP1Chip:st1.chip, auctionP1StackDim:st1.dim, auctionP1StackPop:st1.pop,
           auctionP2Stack:st2.coins, auctionP2Chip:st2.chip, auctionP2StackDim:st2.dim, auctionP2StackPop:st2.pop,
         };
