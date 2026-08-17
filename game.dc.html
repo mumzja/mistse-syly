@@ -1643,10 +1643,10 @@ const ARTIFACTS = [
   {name:'Магічна діжа', branch:'prov', level:'strong', slava:3, icon:'ph-cooking-pot', actionType:'economy', cost:{prov:2,gold:1}, bonusAmount:2, localShield:true},
   {name:'Чучело-талісман', branch:'gold', level:'weak', slava:1, icon:'ph-coin', actionType:'economy', cost:{gold:2,mat:1,prov:1}, bonusAmount:1, localShield:true},
   {name:'Лялька-мотанка', branch:'gold', level:'strong', slava:3, icon:'ph-flower', actionType:'economy', cost:{gold:2}, bonusAmount:2, localShield:true},
-  {name:'Стріляний капшук', branch:'def', level:'weak', slava:1, icon:'ph-shield', actionType:'defense', cost:{mat:2,prov:1,gold:1}, bonusAmount:1, localShield:true},
-  {name:'Освячений хрест', branch:'def', level:'strong', slava:3, icon:'ph-cross', actionType:'defense', cost:{gold:1,mat:1}, bonusAmount:2, localShield:true},
-  {name:'Компас мандрівника', branch:'exp', level:'weak', slava:1, icon:'ph-compass', actionType:'movement', cost:{mat:2,gold:1,prov:1}, bonusAmount:1, localShield:true},
-  {name:'Зоряний подзор', branch:'exp', level:'strong', slava:3, icon:'ph-telescope', actionType:'movement', cost:{gold:2}, bonusAmount:2, localShield:true}
+  {name:'Стріляний капшук', branch:'def', level:'weak', slava:2, icon:'ph-shield', actionType:'defense', cost:{mat:2,prov:1,gold:1}, bonusAmount:2, localShield:true},
+  {name:'Освячений хрест', branch:'def', level:'strong', slava:4, icon:'ph-cross', actionType:'defense', cost:{gold:1,mat:1}, bonusAmount:3, localShield:true},
+  {name:'Компас мандрівника', branch:'exp', level:'weak', slava:2, icon:'ph-compass', actionType:'movement', cost:{mat:2,gold:1,prov:1}, bonusAmount:1, localShield:true, carryMoves:true},
+  {name:'Зоряний подзор', branch:'exp', level:'strong', slava:4, icon:'ph-telescope', actionType:'movement', cost:{gold:2}, bonusAmount:2, localShield:true, carryMoves:true}
 ];
 const HETMAN_DECK = {
   A:[
@@ -1708,16 +1708,16 @@ const ZONE_COST = {near:{mat:2,prov:1}, mid:{mat:3,prov:2}, far:{mat:4,prov:3,wo
 const ZONE_LABEL = {near:'Степовий рейд (1-5)', mid:'Річкові пороги (6-10)', far:'Морський похід (11-фінал)'};
 const PORT_NAMES = ['Порт Затонулі скарби','Порт Забуті легенди','Порт Шукачі пригод'];
 const ATTACK_MIX_SCHEDULE = [
-  {mat:4},
-  {mat:2,prov:2},
+  {mat:3},
+  {mat:2,prov:1},
   {prov:3,gold:1},
-  {mat:2,prov:2,gold:1},
-  {mat:2,prov:3,gold:2},
-  {prov:3,gold:3},
+  {mat:2,prov:1,gold:1},
+  {mat:2,prov:2,gold:2},
+  {prov:4,gold:3},
   {mat:3,prov:2,gold:2},
   {mat:3,prov:3,gold:2},
   {mat:3,prov:4,gold:2},
-  {mat:3,prov:4,gold:3}
+  {mat:4,prov:4,gold:3}
 ];
 const TIER_SUMMON = {near:1, mid:2, far:3};
 const TIER_SUMMON_COLOR = {near:'#7fae6f', mid:'#c9a13b', far:'#c0524a'};
@@ -1805,7 +1805,7 @@ const MAYA_TIERS=[
     {name:'Святилище Неба', effect:{}, desc:'+1 Ловець духів', giveShaman:true}
   ]},
   {n:1, cost:{gold:3}, trapName:'Гнів Оракула', trapDesc:'−1 робітник наступного раунду (кімната лишається відкритою)', rooms:[
-    {name:'Святилище Предків', effect:{inf:10}, desc:'+10 Слави + постійний імунітет від Загроз', relic:true}
+    {name:'Святилище Предків', effect:{inf:6}, desc:'+6 Слави + постійний імунітет від Загроз', relic:true}
   ]}
 ];
 const ATOLL_TILES=[
@@ -2457,10 +2457,15 @@ class Component extends DCLogic {
   }
   shipMovesTotal(pKey){ const raw=this.props && this.props.startingShipMoves; const n=parseInt(raw,10); const base=(raw!=null && !isNaN(n)) ? n : 3; const p=this.state.players[pKey]; return base+(p.ship-1)+(p.ship>=5?1:0)+(p.extraShipMoves||0); }
   shamansTotal(pKey){ const raw=this.props && this.props.startingShamans; const n=parseInt(raw,10); const base=(raw!=null && !isNaN(n)) ? n : 1; return base+(this.state.players[pKey].shamansCapBonus||0); }
+  hasCarryMovesArtifact(pKey){
+    const ownerNum=pKey==='p1'?1:2;
+    return this.state.board.some(c=>c.building && c.building.owner===ownerNum && c.building.artifact && c.building.artifact.carryMoves);
+  }
   shipUpgradeCost(level){
     if(level<=2) return {mat:level*3, prov:level};
     if(level===3) return {mat:level*3, prov:level, gold:level};
-    return {mat:12, prov:4, gold:4};
+    if(level===4) return {mat:12, prov:4, gold:4};
+    return {mat:8, prov:3, gold:3};
   }
   shipUpgradeReqOk(pKey,level){
     const ownerNum=pKey==='p1'?1:2;
@@ -2468,8 +2473,7 @@ class Component extends DCLogic {
     if(level===1) return true;
     if(level===2) return kurinTier>=2;
     if(level===3) return kurinTier>=3;
-    if(level<4) return true;
-    return kurinTier>=3;
+    return true;
   }
   hetmanEraKey(round){ return round<=4?'A':(round<=8?'B':'V'); }
   hetmanFindQuest(code){ for(const era in HETMAN_DECK){ const q=HETMAN_DECK[era].find(x=>x.code===code); if(q) return q; } return null; }
@@ -2814,7 +2818,9 @@ class Component extends DCLogic {
     this.state.sketchEquippedThisRound[pKey]=true;
     const existing=this.state.sketchShips[pKey];
     if(existing){
-      this.state.sketchShips[pKey]={q:existing.q, r:existing.r, movesLeft:this.shipMovesTotal(pKey)};
+      const carry=this.hasCarryMovesArtifact(pKey) ? Math.max(0, existing.movesLeft||0) : 0;
+      this.state.sketchShips[pKey]={q:existing.q, r:existing.r, movesLeft:this.shipMovesTotal(pKey)+carry};
+      if(carry) this.logMsg(this.pName(pKey)+': оберіг Мандрів зберіг '+carry+' невитрачених кроків Чайки.');
       this.state.sketchPickingPort=false;
     } else {
       this.state.sketchPickingPort=true;
@@ -4423,7 +4429,7 @@ class Component extends DCLogic {
       const target=targets[0];
       if(target.building.artifact){ this.logMsg('Старий оберіг «'+target.building.artifact.name+'» замінено на «'+card.name+'».'); }
       const artDef1=ARTIFACTS.find(a=>a.name===card.name);
-      target.building.artifact={name:card.name, icon:card.icon, bonusAmount:artDef1?artDef1.bonusAmount:1, localShield:artDef1?artDef1.localShield:true, branch:artDef1?artDef1.branch:card.branch};
+      target.building.artifact={name:card.name, icon:card.icon, bonusAmount:artDef1?artDef1.bonusAmount:1, localShield:artDef1?artDef1.localShield:true, branch:artDef1?artDef1.branch:card.branch, carryMoves:!!(artDef1&&artDef1.carryMoves)};
       if(target.building.branch==='def' && artDef1) target.building.defReduce=(target.building.defReduce||0)+artDef1.bonusAmount;
       if(target.building.branch==='exp' && artDef1){ this.state.players[pKey].extraShipMoves=(this.state.players[pKey].extraShipMoves||0)+artDef1.bonusAmount; }
       this.triggerPop(this.state.board.indexOf(target));
@@ -4443,7 +4449,7 @@ class Component extends DCLogic {
     if(!cell.building.spirit){ alert('Оберіг можна прикріпити лише до будівлі, де вже оселено Духа.'); return; }
     if(cell.building.artifact){ this.logMsg('Старий оберіг «'+cell.building.artifact.name+'» замінено на «'+card.name+'».'); }
     const artDef2=ARTIFACTS.find(a=>a.name===card.name);
-    cell.building.artifact={name:card.name, icon:card.icon, bonusAmount:artDef2?artDef2.bonusAmount:1, localShield:artDef2?artDef2.localShield:true, branch:artDef2?artDef2.branch:card.branch};
+    cell.building.artifact={name:card.name, icon:card.icon, bonusAmount:artDef2?artDef2.bonusAmount:1, localShield:artDef2?artDef2.localShield:true, branch:artDef2?artDef2.branch:card.branch, carryMoves:!!(artDef2&&artDef2.carryMoves)};
     if(cell.building.branch==='def' && artDef2) cell.building.defReduce=(cell.building.defReduce||0)+artDef2.bonusAmount;
     if(cell.building.branch==='exp' && artDef2){ this.state.players[pKeyNow].extraShipMoves=(this.state.players[pKeyNow].extraShipMoves||0)+artDef2.bonusAmount; }
     this.triggerPop(idx);
@@ -6248,7 +6254,13 @@ class Component extends DCLogic {
         desc={reqLine, terrainLine:edgeLine, terrainTokens, slavaTokens, slavaText};
         reward='Видобуток:';
       } else if(c.type==='artifact'){
+        const ad=ARTIFACTS.find(a=>a.name===c.name);
         rewardTokens=[{icon:'ph-medal',text:'+'+c.slava}];
+        if(ad){
+          if(ad.actionType==='defense') rewardTokens.push({icon:'ph-shield-check',text:'−'+ad.bonusAmount});
+          else if(ad.actionType==='movement') rewardTokens.push({icon:'ph-boat',text:'+'+ad.bonusAmount+' · кроки переносяться'});
+          else rewardTokens.push({icon:RES_ICON[ad.branch]||'ph-tree',text:'+'+ad.bonusAmount});
+        }
         reward='Бонус:';
       } else if(c.effect){
         rewardTokens=tokenizeAmounts(c.effect,'effect');
@@ -6872,7 +6884,12 @@ class Component extends DCLogic {
           return rows;
         }
         if(tab==='artifacts'){
-          return ARTIFACTS.map((a,i)=>({c0:a.name, c1:(BRANCH_LABELS[a.branch]||a.branch)+' ('+(a.level==='strong'?'сильний':'слабший')+')', c2:Object.entries(a.cost).map(([k,v])=>v+' '+RES_ABBR[k]).join(', '), c3:'+'+a.slava+' Слави · +'+a.bonusAmount+' до доходу Духа · Локальний Щит'+(a.branch==='def'?' (до Оборони)':a.branch==='exp'?' (до ходів Чайки)':''), onClick:()=>this.debugAddArtifactToHand(i), rowStyle:'cursor:pointer;'}));
+          return ARTIFACTS.map((a,i)=>{
+            const eff = a.actionType==='defense' ? ('−'+a.bonusAmount+' до порогу Загрози')
+              : a.actionType==='movement' ? ('+'+a.bonusAmount+' хід Чайки назавжди · невитрачені кроки переносяться в наступний раунд')
+              : ('+'+a.bonusAmount+' до доходу Духа');
+            return {c0:a.name, c1:(BRANCH_LABELS[a.branch]||a.branch)+' ('+(a.level==='strong'?'сильний':'слабший')+')', c2:Object.entries(a.cost).map(([k,v])=>v+' '+RES_ABBR[k]).join(', '), c3:'+'+a.slava+' Слави · '+eff+' · Локальний Щит', onClick:()=>this.debugAddArtifactToHand(i), rowStyle:'cursor:pointer;'};
+          });
         }
         if(tab==='hetman'){
           const rows=[];
