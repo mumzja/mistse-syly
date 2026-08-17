@@ -2161,7 +2161,9 @@ class Component extends DCLogic {
     if(pk==='p1') this.state.marketAuctionBidP1=n; else this.state.marketAuctionBidP2=n;
     this.forceUpdate();
   }
+  auctionTurnPk(){ const l=this.state.marketAuctionLeader; return l ? (l==='p1'?'p2':'p1') : ('p'+this.state.activePlayer); }
   auctionOutbid(pk){
+    if(this.auctionTurnPk()!==pk) return;
     if(this.state.marketAuctionPassed && this.state.marketAuctionPassed[pk]) return;
     if(this.state.marketAuctionLeader===pk) return;
     const nextBid=(this.state.marketAuctionCurBid||0)+1;
@@ -2183,6 +2185,7 @@ class Component extends DCLogic {
     this.forceUpdate();
   }
   auctionPass(pk){
+    if(this.auctionTurnPk()!==pk) return;
     if(!this.state.marketAuctionPassed) this.state.marketAuctionPassed={p1:false,p2:false};
     this.state.marketAuctionPassed[pk]=true;
     const otherKey=pk==='p1'?'p2':'p1';
@@ -6965,17 +6968,19 @@ class Component extends DCLogic {
           const other=pk==='p1'?'p2':'p1';
           const seatLock = !!(this.net && this.net.mode==='online' && this.net.seat!==pk);
           const isLeader=leader===pk;
+          const turnPk = leader ? (leader==='p1'?'p2':'p1') : ('p'+s.activePlayer);
+          const notMyTurn = turnPk!==pk;
           const nextBid=curBid+1;
           const pr=s.players[pk];
           const canAfford=(pr.gold||0)>=nextBid;
-          const status = isLeader ? ('Лідирує: '+curBid+' Скарбу') : (passed[pk] ? 'Пас' : (leader ? 'Думає...' : 'Готовий ставити'));
+          const status = isLeader ? ('Лідирує: '+curBid+' Скарбу') : (passed[pk] ? 'Пас' : (notMyTurn ? 'Чекає...' : 'Ваш хід'));
           return {
-            Name: this.pName(pk), Color: this.pColor(pk), BorderColor: isLeader?this.pColor(pk):'var(--color-divider)',
+            Name: this.pName(pk), Color: this.pColor(pk), BorderColor: (!notMyTurn&&!passed[pk])?this.pColor(pk):'var(--color-divider)',
             Status: status,
             BidLabel: (curBid===0?'Поставити ':'Перебити (')+nextBid+(curBid===0?'':')'),
-            BidBtnStyle: canAfford&&!isLeader&&!passed[pk]&&!seatLock ? ('background:'+this.pColor(pk)+';border-color:'+this.pColor(pk)+';color:#12141c;') : 'opacity:0.4;',
-            BidDisabled: isLeader || passed[pk] || !canAfford || seatLock,
-            PassDisabled: passed[pk] || seatLock,
+            BidBtnStyle: canAfford&&!isLeader&&!passed[pk]&&!seatLock&&!notMyTurn ? ('background:'+this.pColor(pk)+';border-color:'+this.pColor(pk)+';color:#12141c;') : 'opacity:0.4;',
+            BidDisabled: isLeader || passed[pk] || !canAfford || seatLock || notMyTurn,
+            PassDisabled: passed[pk] || seatLock || notMyTurn,
           };
         };
         const m1=mk('p1'), m2=mk('p2');
