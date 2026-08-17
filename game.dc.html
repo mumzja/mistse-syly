@@ -115,12 +115,15 @@
     <i class="ph ph-coin" style="font-size:15px;color:#4a3200;"></i>
   </div>
 </sc-for>
-<sc-if value="{{ auctionWinFx }}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{ auctionShowConfetti }}" hint-placeholder-val="{{ false }}">
   <div style="position:fixed;inset:0;pointer-events:none;z-index:9996;overflow:hidden;">
     <sc-for list="{{ confettiPieces }}" as="cp" hint-placeholder-count="0">
       <div style="position:absolute;top:0;left:{{ cp.left }}%;width:8px;height:14px;background:{{ cp.color }};animation:confetti-fall {{ cp.dur }}s ease-in {{ cp.delay }}s forwards;"></div>
     </sc-for>
   </div>
+</sc-if>
+<sc-if value="{{ auctionShowLossVignette }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;pointer-events:none;z-index:9996;box-shadow:inset 0 0 120px 40px rgba(192,82,74,0.75);animation:vignette-flash 1.8s ease-in-out 2;"></div>
 </sc-if>
 <div style="background:var(--color-bg);color:var(--color-text);min-height:100vh;padding-top:var(--space-8);padding-right:var(--space-8);padding-bottom:340px;padding-left:var(--space-8);font-family:var(--font-body);">
 
@@ -345,7 +348,7 @@
                       </sc-for>
                     </div>
                     <sc-if value="{{ auctionP1Chip }}" hint-placeholder-val="{{ false }}">
-                      <span class="tag tag-accent" style="font-size:11px;font-weight:700;{{ auctionP1StackPop }}">{{ auctionP1Chip }}</span>
+                      <span class="tag tag-accent" style="font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:3px;{{ auctionP1StackPop }}"><i class="ph ph-coins"></i>{{ auctionP1Chip }}</span>
                     </sc-if>
                   </div>
                   <button type="button" class="btn" style="width:100%;margin-bottom:6px;{{ auctionP1BidBtnStyle }}" onClick="{{ auctionP1Bid }}" disabled="{{ auctionP1BidDisabled }}"><i class="ph ph-coins"></i>&nbsp;{{ auctionP1BidLabel }}</button>
@@ -361,7 +364,7 @@
                       </sc-for>
                     </div>
                     <sc-if value="{{ auctionP2Chip }}" hint-placeholder-val="{{ false }}">
-                      <span class="tag tag-accent" style="font-size:11px;font-weight:700;{{ auctionP2StackPop }}">{{ auctionP2Chip }}</span>
+                      <span class="tag tag-accent" style="font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:3px;{{ auctionP2StackPop }}"><i class="ph ph-coins"></i>{{ auctionP2Chip }}</span>
                     </sc-if>
                   </div>
                   <button type="button" class="btn" style="width:100%;margin-bottom:6px;{{ auctionP2BidBtnStyle }}" onClick="{{ auctionP2Bid }}" disabled="{{ auctionP2BidDisabled }}"><i class="ph ph-coins"></i>&nbsp;{{ auctionP2BidLabel }}</button>
@@ -2212,8 +2215,8 @@ class Component extends DCLogic {
       this.state.marketAuctionNoBids=false;
       this.logMsg('Аукціон: '+resultText);
       this.triggerHandFlash(leader, winner.hand[winner.hand.length-1]);
-      this.state.auctionWinFx=true;
-      setTimeout(()=>{ this.state.auctionWinFx=false; this.forceUpdate(); }, 2200);
+      this.state.auctionWinFx=leader;
+      setTimeout(()=>{ this.state.auctionWinFx=null; this.forceUpdate(); }, 2200);
     }
     slot.auctionResolved=true;
     this.state.marketAuctionStep='result';
@@ -6629,6 +6632,8 @@ class Component extends DCLogic {
       cardFlyAnims: s.cardFlyAnims||[],
       auctionCoins: s.auctionCoinFly ? Array.from({length:Math.min(s.auctionCoinFly.count,10)},(_,i)=>({anim:(s.auctionCoinFly.pk==='p1'?'coin-fly-left':'coin-fly-right')+(i%4), delay:(i*0.05).toFixed(2)})) : [],
       auctionWinFx: !!s.auctionWinFx,
+      auctionShowConfetti: !!s.auctionWinFx && (!(this.net && this.net.mode==='online' && this.net.seat) || this.net.seat===s.auctionWinFx),
+      auctionShowLossVignette: !!s.auctionWinFx && !!(this.net && this.net.mode==='online' && this.net.seat) && this.net.seat!==s.auctionWinFx,
       confettiPieces: s.auctionWinFx ? Array.from({length:70},(_,i)=>({left:Math.round(Math.random()*100), color:['#f0b429','#d4af37','#4caf6b','#3ba8ff','#e5484d','#9184d9'][i%6], dur:(1.6+Math.random()*0.8).toFixed(2), delay:(Math.random()*0.6).toFixed(2)})) : [],
       legendOpen: !!s.legendOpen, toggleLegend:()=>this.toggleLegend(), legendToggleIcon: s.legendOpen?'ph-caret-up':'ph-caret-down',
       legendItems: [
@@ -6980,7 +6985,7 @@ class Component extends DCLogic {
           const n=Math.min(bid,5);
           return {
             coins: Array.from({length:n},(_,i)=>i),
-            chip: bid>0?('🪙 x'+bid):'',
+            chip: bid>0?('x'+bid):'',
             dim: (leader && leader!==pk && bid>0) ? 0.45 : 1,
             pop: s.auctionBidPop===pk ? 'animation:hex-pop 0.4s ease-out;' : ''
           };
@@ -7007,7 +7012,7 @@ class Component extends DCLogic {
       confirmMarketAuctionP1:()=>this.confirmMarketAuctionBid('p1'),
       confirmMarketAuctionP2:()=>this.confirmMarketAuctionBid('p2'),
       closeMarketAuction:()=>this.closeMarketAuction(),
-      reserveModalOpen: !!s.personalReserveModalOpen,
+      reserveModalOpen: !!s.personalReserveModalOpen && !(this.net && this.net.mode==='online' && this.net.seat && this.net.seat!==s.personalReserveModalOpen),
       reserveModalLabel: this.pName(s.personalReserveModalOpen||'p1'),
       reserveModalColor: this.pColor(s.personalReserveModalOpen||'p1'),
       reserveModalOptions: (()=>{
